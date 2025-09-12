@@ -2303,75 +2303,33 @@ class _OrderScreenContentState extends State<OrderScreenContent> {
   }
 
   void _filterProductsByCategory() {
-    List<Ovqat> filtered = _allProducts;
+    print(_filteredProducts.length);
 
-    // Global qidiruv - qidiruv so'rovi bo'lsa
-    if (_searchQuery.isNotEmpty) {
-      final query = _searchQuery.toLowerCase();
+    // Print the current selected category id
+    print('Selected Category ID: $_selectedCategoryId');
 
-      // Mahsulot nomi bo'yicha global qidiruv
-      filtered =
-          _allProducts.where((product) {
-            final productName = product.name.toLowerCase();
-            final productSub = product.subcategory?.toLowerCase() ?? '';
-
-            // Mahsulot nomi yoki subkategoriya nomi bilan mos kelishi
-            return productName.contains(query) || productSub.contains(query);
-          }).toList();
-
-      if (filtered.isNotEmpty && _selectedCategoryId == null) {
-        final firstProduct = filtered.first;
-        final matchedCategory = _categories.firstWhere(
-          (cat) => cat.id == firstProduct.categoryId,
-          orElse:
-              () => Category(
-                id: '',
-                title: '',
-                subcategories: [],
-                printerName: '',
-                printerIp: '',
-                printerId: '',
-              ),
-        );
-
-        if (matchedCategory.id.isNotEmpty) {
-          _selectedCategoryId = matchedCategory.id;
-          _selectedCategoryName = matchedCategory.title;
-
-          // Agar mahsulotda subkategoriya bo'lsa, uni ham tanlash
-          if (firstProduct.subcategory != null &&
-              firstProduct.subcategory!.isNotEmpty) {
-            _selectedSubcategory = firstProduct.subcategory;
-          }
-        }
-      }
-    }
-    // Qidiruv bo'sh bo'lsa, kategoriya tanlangan bo'lsa
-    else if (_selectedCategoryId != null) {
-      // Faqat kategoriya tanlangan - kategoriya bo'yicha filterlash
-      filtered =
-          _allProducts.where((product) {
-            if (product.categoryId != _selectedCategoryId) return false;
-
-            // Agar subkategoriya tanlangan bo'lsa
-            if (_selectedSubcategory != null &&
-                _selectedSubcategory!.isNotEmpty) {
-              return product.subcategory?.toLowerCase() ==
-                  _selectedSubcategory!.toLowerCase();
-            }
-
-            return true;
-          }).toList();
-    }
-    // Hech narsa tanlangmagan va qidiruv bo'sh - barcha mahsulotlar
-    else {
-      filtered = _allProducts;
+    if (_selectedCategoryId == null || _selectedCategoryId!.isEmpty) {
+      _filteredProducts = _allProducts;
+    } else {
+      _filteredProducts =
+          _allProducts
+              .where((product) => product.categoryName == _selectedCategoryName)
+              .toList();
     }
 
-    // Natijani yangilash
-    setState(() {
-      _filteredProducts = filtered;
-    });
+    // Print the number of matched products and their names/IDs
+    print('Filtered products count: ${_filteredProducts.length}');
+    for (final product in _filteredProducts) {
+      print(
+        'Product -> id: ${product.id}, name: ${product.name}, categoryId: ${product.categoryId}',
+      );
+    }
+
+    if (mounted) {
+      setState(() {
+        _filteredProducts = _filteredProducts;
+      });
+    }
   }
 
   void _selectCategory(
@@ -2379,11 +2337,13 @@ class _OrderScreenContentState extends State<OrderScreenContent> {
     String categoryTitle, {
     String? subcategory,
   }) {
-    setState(() {
-      _selectedCategoryId = categoryId;
-      _selectedCategoryName = categoryTitle;
-      _selectedSubcategory = subcategory;
-    });
+    if (mounted) {
+      setState(() {
+        _selectedCategoryId = categoryId;
+        _selectedCategoryName = categoryTitle;
+        _selectedSubcategory = subcategory;
+      });
+    }
     _filterProductsByCategory();
   }
 
@@ -3116,14 +3076,12 @@ class _OrderScreenContentState extends State<OrderScreenContent> {
                       children: [
                         _buildSubcategoryChip(null, 'Barchasi'),
                         const SizedBox(width: 8),
-                        ...selectedCategory.subcategories
-                            .map(
-                              (sub) => Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: _buildSubcategoryChip(sub, sub),
-                              ),
-                            )
-                            .toList(),
+                        ...selectedCategory.subcategories.map(
+                          (sub) => Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: _buildSubcategoryChip(sub, sub),
+                          ),
+                        ),
                       ],
                     ),
                   ),
