@@ -3,6 +3,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:sora/data/user_datas.dart';
 import 'package:top_snackbar_flutter/top_snack_bar.dart';
 import 'dart:io';
 import 'dart:async';
@@ -783,14 +784,16 @@ class _PosScreenState extends State<PosScreen> {
   }
 
   // Stol Controller
-  static const String baseUrl = "${ApiConfig.baseUrl}";
+  static const String baseUrl = ApiConfig.baseUrl;
+
   Future<List<StolModel>> fetchTables() async {
+    final token = await UserDatas().getToken();
     final url = Uri.parse("$baseUrl/tables/list");
     final response = await http.get(
       url,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ${widget.token}', // afitsant tokeni headerda
+        'Authorization': 'Bearer $token', // afitsant tokeni headerda
       },
     );
     if (response.statusCode == 200) {

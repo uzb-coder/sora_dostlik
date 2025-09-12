@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sora/Global/Api_global.dart';
+import 'package:sora/data/user_datas.dart';
 import 'dart:async';
 import '../../Admin/Page/Home_page.dart';
 import '../../Global/Global_token.dart';
@@ -62,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  static const String baseUrl = "${ApiConfig.baseUrl}";
+  static const String baseUrl = ApiConfig.baseUrl;
 
   String? _errorMessage;
 
@@ -113,6 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
         final data = jsonDecode(res.body);
 
         if (data['token'] != null && data['token'].isNotEmpty) {
+          UserDatas().saveToken(data['token']);
           return data['token'];
         } else {
           setState(() {
