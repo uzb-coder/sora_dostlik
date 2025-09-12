@@ -3,7 +3,6 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:sora/data/user_datas.dart';
 import 'package:top_snackbar_flutter/top_snack_bar.dart';
 import 'dart:io';
 import 'dart:async';
@@ -134,6 +133,7 @@ class Category {
       printerId = printer['_id']?.toString() ?? '';
       printerName = printer['name']?.toString() ?? '';
       printerIp = printer['ip']?.toString() ?? '';
+
     }
 
     return Category(
@@ -142,19 +142,18 @@ class Category {
       printerId: printerId,
       printerName: printerName,
       printerIp: printerIp,
-      subcategories:
-          (json['subcategories'] is List)
-              ? (json['subcategories'] as List)
-                  .map((e) => e['title']?.toString() ?? '')
-                  .toList()
-              : [],
+      subcategories: (json['subcategories'] is List)
+          ? (json['subcategories'] as List)
+          .map((e) => e['title']?.toString() ?? '')
+          .toList()
+          : [],
     );
-  }
-}
+  }}
+
 
 class PosScreen extends StatefulWidget {
   final User user;
-  final token;
+  final String token;
   const PosScreen({super.key, required this.user, required this.token});
 
   @override
@@ -285,13 +284,10 @@ class _PosScreenState extends State<PosScreen> {
         );
       }
     } catch (e) {
-      showCenterSnackBar(
-        context,
-        "Ko'chirishda xatolik: $e",
-        color: Colors.red,
-      );
+      showCenterSnackBar(context, "Ko'chirishda xatolik: $e", color: Colors.red);
     }
   }
+
 
   void _handleTableTap(String tableName, String tableId) {
     print("🖱️ Stol tanlandi: $tableName (ID: $tableId)");
@@ -309,7 +305,7 @@ class _PosScreenState extends State<PosScreen> {
   }
 
   void _startRealTimeUpdates() {
-    _realTimeTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+    _realTimeTimer = Timer.periodic(const Duration(milliseconds: 800), (timer) {
       _checkTableStatusesRealTime();
       if (_selectedTableId != null) {
         _fetchOrdersForTableSilently(_selectedTableId!);
@@ -409,21 +405,20 @@ class _PosScreenState extends State<PosScreen> {
     try {
       final response = await http
           .get(
-            Uri.parse("${ApiConfig.baseUrl}/orders/table/$tableId"),
-            headers: {
-              'Authorization': 'Bearer ${widget.token}',
-              'Content-Type': 'application/json',
-            },
-          )
+        Uri.parse("${ApiConfig.baseUrl}/orders/table/$tableId"),
+        headers: {
+          'Authorization': 'Bearer ${widget.token}',
+          'Content-Type': 'application/json',
+        },
+      )
           .timeout(const Duration(seconds: 3));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        final orders =
-            data
-                .map((json) => Order.fromJson(json))
-                .where((order) => order.status == 'pending')
-                .toList();
+        final orders = data
+            .map((json) => Order.fromJson(json))
+            .where((order) => order.status == 'pending')
+            .toList();
 
         orders.sort((a, b) => a.id.compareTo(b.id));
 
@@ -439,6 +434,7 @@ class _PosScreenState extends State<PosScreen> {
       print("❌ Silent fetch error: $e");
     }
   }
+
 
   void _clearCacheAndRefresh() {
     if (_selectedTableId != null) {
@@ -613,9 +609,7 @@ class _PosScreenState extends State<PosScreen> {
     try {
       // ✅ Mahsulotlarni olish
       Future<List<Ovqat>> fetchProducts() async {
-        final url = Uri.parse(
-          "${ApiConfig.baseUrl}/foods/list",
-        ); // <-- yo‘lni tekshiring
+        final url = Uri.parse("${ApiConfig.baseUrl}/foods/list"); // <-- yo‘lni tekshiring
 
         final response = await http.get(
           url,
@@ -633,9 +627,7 @@ class _PosScreenState extends State<PosScreen> {
           }
           throw Exception("API javobida mahsulotlar ro'yxati topilmadi");
         } else {
-          throw Exception(
-            "Mahsulotlar olishda xatolik: ${response.statusCode}",
-          );
+          throw Exception("Mahsulotlar olishda xatolik: ${response.statusCode}");
         }
       }
 
@@ -664,10 +656,9 @@ class _PosScreenState extends State<PosScreen> {
               return [];
             }
 
-            final categories =
-                categoriesList.map((json) {
-                  return Category.fromJson(json);
-                }).toList();
+            final categories = categoriesList.map((json) {
+              return Category.fromJson(json);
+            }).toList();
 
             return categories;
           } catch (e) {
@@ -677,8 +668,10 @@ class _PosScreenState extends State<PosScreen> {
           return [];
         }
       }
-
-      final results = await Future.wait([fetchCategories(), fetchProducts()]);
+      final results = await Future.wait([
+        fetchCategories(),
+        fetchProducts(),
+      ]);
 
       if (mounted) {
         setState(() {
@@ -688,7 +681,9 @@ class _PosScreenState extends State<PosScreen> {
         });
       }
 
-      for (var c in _categories) {}
+      for (var c in _categories) {
+      }
+
     } catch (e) {
       if (mounted) setState(() => _isLoadingProducts = false);
     }
@@ -717,42 +712,41 @@ class _PosScreenState extends State<PosScreen> {
 
   // Bekor qilingan mahsulotni printerga yuborish
   Future<void> _printCancelledItem(
-    OrderItem item,
-    int cancelQuantity,
-    String reason,
-    Order order,
-  ) async {
+      OrderItem item,
+      int cancelQuantity,
+      String reason,
+      Order order,
+      ) async {
     try {
       debugPrint('🖨️ Bekor qilingan mahsulot print qilinmoqda');
       debugPrint("🟢 Categories IDs: ${_categories.map((c) => c.id).toList()}");
 
       // Mahsulotning kategoriyasini topish
       final product = _allProducts.firstWhere(
-        (p) => p.id == item.foodId,
-        orElse:
-            () => Ovqat(
-              id: '',
-              name: 'Noma\'lum',
-              price: 0,
-              categoryId: '',
-              subcategory: null,
-              categoryName: '',
-              subcategories: [],
-            ),
+            (p) => p.id == item.foodId,
+        orElse: () => Ovqat(
+          id: '',
+          name: 'Noma\'lum',
+          price: 0,
+          categoryId: '',
+          subcategory: null,
+          categoryName: '',
+          subcategories: [],
+        ),
       );
 
       final category = _categories.firstWhere(
-        (cat) => cat.id == product.categoryId,
-        orElse:
-            () => Category(
-              id: '',
-              title: '',
-              printerId: '',
-              printerName: '',
-              printerIp: '',
-              subcategories: [],
-            ),
+            (cat) => cat.id == product.categoryId,
+        orElse: () => Category(
+          id: '',
+          title: '',
+          printerId: '',
+          printerName: '',
+          printerIp: '',
+          subcategories: [],
+        ),
       );
+
 
       // Printer IP borligini tekshirish
       if (category.printerIp.isNotEmpty && category.printerIp != 'null') {
@@ -771,9 +765,7 @@ class _PosScreenState extends State<PosScreen> {
         final printBytes = _createCancelPrintData(printData);
         await _printToSocket(category.printerIp, printBytes);
 
-        debugPrint(
-          '✅ Bekor qilingan mahsulot ${category.printerIp} ga yuborildi',
-        );
+        debugPrint('✅ Bekor qilingan mahsulot ${category.printerIp} ga yuborildi');
       } else {
         debugPrint("📡 ${category.title} => printerIp: ${category.printerIp}");
         debugPrint('⚠️ Kategoriya printeri topilmadi');
@@ -784,16 +776,14 @@ class _PosScreenState extends State<PosScreen> {
   }
 
   // Stol Controller
-  static const String baseUrl = ApiConfig.baseUrl;
-
+  static const String baseUrl = "${ApiConfig.baseUrl}";
   Future<List<StolModel>> fetchTables() async {
-    final token = await UserDatas().getToken();
     final url = Uri.parse("$baseUrl/tables/list");
     final response = await http.get(
       url,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token', // afitsant tokeni headerda
+        'Authorization': 'Bearer ${widget.token}', // afitsant tokeni headerda
       },
     );
     if (response.statusCode == 200) {
@@ -929,7 +919,7 @@ class _PosScreenState extends State<PosScreen> {
   final List<String> reasons = [
     "Mijoz bekor qildi",
     "Klient shikoyat qildi",
-    "Noto‘g‘ri tayyorlangan",
+    "Notogri tayyorlangan",
     "Mahsulot tugagan",
     "Xizmat sifati past",
     "Boshqa",
@@ -1496,11 +1486,11 @@ class _PosScreenState extends State<PosScreen> {
   }
 
   Widget _buildTableCard(
-    StolModel table,
-    bool isSelected,
-    bool isOccupied,
-    bool isOwnTable,
-  ) {
+      StolModel table,
+      bool isSelected,
+      bool isOccupied,
+      bool isOwnTable,
+      ) {
     Color cardColor;
     Color textColor;
     String statusText;
@@ -1533,7 +1523,10 @@ class _PosScreenState extends State<PosScreen> {
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor, width: 2),
+        border: Border.all(
+          color: borderColor,
+          width: 2,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1628,60 +1621,47 @@ class _PosScreenState extends State<PosScreen> {
 
           // 🔽 Kontent qismi
           Expanded(
-            child:
-                _selectedTableId == null
-                    ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.point_of_sale,
-                            size: 64,
-                            color: AppColors.grey,
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            "Stolni tanlang",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: AppColors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                    : _selectedTableOrders.isEmpty
-                    ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.receipt_long,
-                            size: 48,
-                            color: AppColors.grey,
-                          ),
-                          SizedBox(height: 12),
-                          Text(
-                            "Zakazlar yo'q",
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: AppColors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                    : ListView.builder(
-                      itemCount: _selectedTableOrders.length,
-                      itemBuilder: (context, index) {
-                        final order = _selectedTableOrders[index];
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: _buildOrderCard(order, index),
-                        );
-                      },
-                    ),
+            child: _selectedTableId == null
+                ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.point_of_sale, size: 64, color: AppColors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    "Stolni tanlang",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16, color: AppColors.grey),
+                  ),
+                ],
+              ),
+            )
+                : _selectedTableOrders.isEmpty
+                ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.receipt_long,
+                      size: 48, color: AppColors.grey),
+                  SizedBox(height: 12),
+                  Text(
+                    "Zakazlar yo'q",
+                    style: TextStyle(
+                        fontSize: 16, color: AppColors.grey),
+                  ),
+                ],
+              ),
+            )
+                : ListView.builder(
+              itemCount: _selectedTableOrders.length,
+              itemBuilder: (context, index) {
+                final order = _selectedTableOrders[index];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: _buildOrderCard(order, index),
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -1980,8 +1960,9 @@ class _PosScreenState extends State<PosScreen> {
   }
 
   Future<void> _showMoveTableDialog(Order order) async {
-    final emptyTables =
-        _tables.where((t) => !(_tableOccupiedStatus[t.id] ?? false)).toList();
+    final emptyTables = _tables
+        .where((t) => !(_tableOccupiedStatus[t.id] ?? false))
+        .toList();
 
     if (emptyTables.isEmpty) {
       showCenterSnackBar(context, "Bo'sh stollar yo'q", color: Colors.red);
@@ -1997,13 +1978,12 @@ class _PosScreenState extends State<PosScreen> {
           title: const Text("Zakazni boshqa stolga ko'chirish"),
           content: DropdownButtonFormField<String>(
             value: selectedTableId,
-            items:
-                emptyTables.map((table) {
-                  return DropdownMenuItem(
-                    value: table.id,
-                    child: Text("Stol ${table.number}"),
-                  );
-                }).toList(),
+            items: emptyTables.map((table) {
+              return DropdownMenuItem(
+                value: table.id,
+                child: Text("Stol ${table.number}"),
+              );
+            }).toList(),
             onChanged: (value) {
               selectedTableId = value;
             },
@@ -2031,6 +2011,7 @@ class _PosScreenState extends State<PosScreen> {
       },
     );
   }
+
 
   // Mahsulot qo'shish dialogini ko'rsatish metodi
   void _showAddItemsDialog(Order order) {
@@ -2306,33 +2287,75 @@ class _OrderScreenContentState extends State<OrderScreenContent> {
   }
 
   void _filterProductsByCategory() {
-    print(_filteredProducts.length);
+    List<Ovqat> filtered = _allProducts;
 
-    // Print the current selected category id
-    print('Selected Category ID: $_selectedCategoryId');
+    // Global qidiruv - qidiruv so'rovi bo'lsa
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
 
-    if (_selectedCategoryId == null || _selectedCategoryId!.isEmpty) {
-      _filteredProducts = _allProducts;
-    } else {
-      _filteredProducts =
-          _allProducts
-              .where((product) => product.categoryName == _selectedCategoryName)
-              .toList();
+      // Mahsulot nomi bo'yicha global qidiruv
+      filtered =
+          _allProducts.where((product) {
+            final productName = product.name.toLowerCase();
+            final productSub = product.subcategory?.toLowerCase() ?? '';
+
+            // Mahsulot nomi yoki subkategoriya nomi bilan mos kelishi
+            return productName.contains(query) || productSub.contains(query);
+          }).toList();
+
+      if (filtered.isNotEmpty && _selectedCategoryId == null) {
+        final firstProduct = filtered.first;
+        final matchedCategory = _categories.firstWhere(
+          (cat) => cat.id == firstProduct.categoryId,
+          orElse:
+              () => Category(
+                id: '',
+                title: '',
+                subcategories: [],
+                printerName: '',
+                printerIp: '',
+                printerId: '',
+              ),
+        );
+
+        if (matchedCategory.id.isNotEmpty) {
+          _selectedCategoryId = matchedCategory.id;
+          _selectedCategoryName = matchedCategory.title;
+
+          // Agar mahsulotda subkategoriya bo'lsa, uni ham tanlash
+          if (firstProduct.subcategory != null &&
+              firstProduct.subcategory!.isNotEmpty) {
+            _selectedSubcategory = firstProduct.subcategory;
+          }
+        }
+      }
+    }
+    // Qidiruv bo'sh bo'lsa, kategoriya tanlangan bo'lsa
+    else if (_selectedCategoryId != null) {
+      // Faqat kategoriya tanlangan - kategoriya bo'yicha filterlash
+      filtered =
+          _allProducts.where((product) {
+            if (product.categoryId != _selectedCategoryId) return false;
+
+            // Agar subkategoriya tanlangan bo'lsa
+            if (_selectedSubcategory != null &&
+                _selectedSubcategory!.isNotEmpty) {
+              return product.subcategory?.toLowerCase() ==
+                  _selectedSubcategory!.toLowerCase();
+            }
+
+            return true;
+          }).toList();
+    }
+    // Hech narsa tanlangmagan va qidiruv bo'sh - barcha mahsulotlar
+    else {
+      filtered = _allProducts;
     }
 
-    // Print the number of matched products and their names/IDs
-    print('Filtered products count: ${_filteredProducts.length}');
-    for (final product in _filteredProducts) {
-      print(
-        'Product -> id: ${product.id}, name: ${product.name}, categoryId: ${product.categoryId}',
-      );
-    }
-
-    if (mounted) {
-      setState(() {
-        _filteredProducts = _filteredProducts;
-      });
-    }
+    // Natijani yangilash
+    setState(() {
+      _filteredProducts = filtered;
+    });
   }
 
   void _selectCategory(
@@ -2340,13 +2363,11 @@ class _OrderScreenContentState extends State<OrderScreenContent> {
     String categoryTitle, {
     String? subcategory,
   }) {
-    if (mounted) {
-      setState(() {
-        _selectedCategoryId = categoryId;
-        _selectedCategoryName = categoryTitle;
-        _selectedSubcategory = subcategory;
-      });
-    }
+    setState(() {
+      _selectedCategoryId = categoryId;
+      _selectedCategoryName = categoryTitle;
+      _selectedSubcategory = subcategory;
+    });
     _filterProductsByCategory();
   }
 
@@ -2423,22 +2444,17 @@ class _OrderScreenContentState extends State<OrderScreenContent> {
         return {'success': false, 'message': 'Token topilmadi'};
       }
 
-      final orderItems =
-          _cart.entries
-              .map((e) {
-                final product = _findProductById(e.key);
-                if (product == null) return null;
+      final orderItems = _cart.entries.map((e) {
+        final product = _findProductById(e.key);
+        if (product == null) return null;
 
-                final quantity =
-                    product.unit == 'kg'
-                        ? e.value['quantity']
-                        : (e.value['quantity'] as num).toInt();
+        final quantity = product.unit == 'kg'
+            ? e.value['quantity']
+            : (e.value['quantity'] as num).toInt();
 
-                if (quantity <= 0) return null;
-                return {'food_id': e.key, 'quantity': quantity};
-              })
-              .where((item) => item != null)
-              .toList();
+        if (quantity <= 0) return null;
+        return {'food_id': e.key, 'quantity': quantity};
+      }).where((item) => item != null).toList();
 
       final orderData = {
         'table_id': widget.tableId,
@@ -2466,10 +2482,7 @@ class _OrderScreenContentState extends State<OrderScreenContent> {
         Future.microtask(() => _printOrderAsync(data));
         return {'success': true, 'message': 'Zakaz muvaffaqiyatli yuborildi!'};
       } else {
-        return {
-          'success': false,
-          'message': data['message'] ?? 'Server xatosi',
-        };
+        return {'success': false, 'message': data['message'] ?? 'Server xatosi'};
       }
     } catch (e) {
       return {'success': false, 'message': 'Xatolik: $e'};
@@ -2515,27 +2528,20 @@ class _OrderScreenContentState extends State<OrderScreenContent> {
 
   Future<Map<String, dynamic>> _sendAddItemsInBackground() async {
     try {
-      final orderItems =
-          _cart.entries
-              .map((e) {
-                final product = _findProductById(e.key);
-                if (product == null) return null;
+      final orderItems = _cart.entries.map((e) {
+        final product = _findProductById(e.key);
+        if (product == null) return null;
 
-                final quantity =
-                    product.unit == 'kg'
-                        ? e.value['quantity']
-                        : (e.value['quantity'] as num).toInt();
+        final quantity = product.unit == 'kg'
+            ? e.value['quantity']
+            : (e.value['quantity'] as num).toInt();
 
-                if (quantity <= 0) return null;
-                return {'food_id': e.key, 'quantity': quantity};
-              })
-              .where((item) => item != null)
-              .toList();
+        if (quantity <= 0) return null;
+        return {'food_id': e.key, 'quantity': quantity};
+      }).where((item) => item != null).toList();
 
       final response = await http.post(
-        Uri.parse(
-          "${ApiConfig.baseUrl}/orders/${widget.existingOrderId}/add-items",
-        ),
+        Uri.parse("${ApiConfig.baseUrl}/orders/${widget.existingOrderId}/add-items"),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${widget.token}',
@@ -2549,10 +2555,7 @@ class _OrderScreenContentState extends State<OrderScreenContent> {
         Future.microtask(() => _printAddedItemsOptimized(data));
         return {'success': true, 'message': 'Mahsulotlar qo‘shildi!'};
       } else {
-        return {
-          'success': false,
-          'message': data['message'] ?? 'Server xatosi',
-        };
+        return {'success': false, 'message': data['message'] ?? 'Server xatosi'};
       }
     } catch (e) {
       return {'success': false, 'message': 'Xatolik: $e'};
@@ -2566,16 +2569,8 @@ class _OrderScreenContentState extends State<OrderScreenContent> {
         final product = _findProductById(entry.key);
         if (product != null) {
           final category = _categories.firstWhere(
-            (cat) => cat.id == product.categoryId,
-            orElse:
-                () => Category(
-                  id: '',
-                  title: '',
-                  subcategories: [],
-                  printerName: '',
-                  printerIp: '',
-                  printerId: '',
-                ),
+                (cat) => cat.id == product.categoryId,
+            orElse: () => Category(id: '', title: '', subcategories: [], printerName: '', printerIp: '', printerId: ''),
           );
           if (category.printerIp.isNotEmpty && category.printerIp != 'null') {
             printerGroups.putIfAbsent(category.printerIp, () => []);
@@ -2591,8 +2586,7 @@ class _OrderScreenContentState extends State<OrderScreenContent> {
       // Fire-and-forget → kutilmaydi
       printerGroups.forEach((ip, items) {
         final printData = {
-          'orderNumber':
-              responseData['order']?['orderNumber']?.toString() ?? '',
+          'orderNumber': responseData['order']?['orderNumber']?.toString() ?? '',
           'waiter_name': widget.user.firstName ?? 'Noma\'lum',
           'table_name': widget.tableName ?? 'N/A',
           'items': items,
@@ -2607,25 +2601,15 @@ class _OrderScreenContentState extends State<OrderScreenContent> {
     }
   }
 
-  Future<void> _printAddedItemsOptimized(
-    Map<String, dynamic> responseData,
-  ) async {
+  Future<void> _printAddedItemsOptimized(Map<String, dynamic> responseData) async {
     try {
       final Map<String, List<Map<String, dynamic>>> printerGroups = {};
       for (final entry in _cart.entries) {
         final product = _findProductById(entry.key);
         if (product != null) {
           final category = _categories.firstWhere(
-            (cat) => cat.id == product.categoryId,
-            orElse:
-                () => Category(
-                  id: '',
-                  title: '',
-                  subcategories: [],
-                  printerName: '',
-                  printerIp: '',
-                  printerId: '',
-                ),
+                (cat) => cat.id == product.categoryId,
+            orElse: () => Category(id: '', title: '', subcategories: [], printerName: '', printerIp: '', printerId: ''),
           );
           if (category.printerIp.isNotEmpty && category.printerIp != 'null') {
             printerGroups.putIfAbsent(category.printerIp, () => []);
@@ -2655,7 +2639,6 @@ class _OrderScreenContentState extends State<OrderScreenContent> {
       debugPrint("❌ Print error: $e");
     }
   }
-
   // Muvaffaqiyat xabarini ko‘rsatish uchun yangi metod
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -2678,11 +2661,7 @@ class _OrderScreenContentState extends State<OrderScreenContent> {
     try {
       print('Printerga ulanmoqda: $ip:9100');
 
-      final socket = await Socket.connect(
-        ip,
-        9100,
-        timeout: Duration(milliseconds: 500),
-      );
+      final socket = await Socket.connect(ip, 9100, timeout: Duration(milliseconds: 500));
       socket.add(data);
       await socket.flush();
 
@@ -2762,8 +2741,7 @@ class _OrderScreenContentState extends State<OrderScreenContent> {
           title: 'Kategoriyani tanlang',
           subcategories: [],
           printerName: '',
-          printerIp: '',
-          printerId: '',
+          printerIp: '', printerId: '',
         );
 
     return Scaffold(
@@ -3079,12 +3057,14 @@ class _OrderScreenContentState extends State<OrderScreenContent> {
                       children: [
                         _buildSubcategoryChip(null, 'Barchasi'),
                         const SizedBox(width: 8),
-                        ...selectedCategory.subcategories.map(
-                          (sub) => Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: _buildSubcategoryChip(sub, sub),
-                          ),
-                        ),
+                        ...selectedCategory.subcategories
+                            .map(
+                              (sub) => Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: _buildSubcategoryChip(sub, sub),
+                              ),
+                            )
+                            .toList(),
                       ],
                     ),
                   ),
@@ -3803,7 +3783,6 @@ class _OrderScreenContentState extends State<OrderScreenContent> {
       });
     }
   }
-
   List<int> _createPrintDataForAddition(Map<String, dynamic> data) {
     final bytes = <int>[];
     const printerWidth = 32;
@@ -3862,7 +3841,9 @@ class _OrderScreenContentState extends State<OrderScreenContent> {
           }
           final qtyPadding = (printerWidth - qtyKgBytes.length) ~/ 2;
           if (qtyPadding > 0) {
-            bytes.addAll(_encodeText(' ' * qtyPadding + '$qty ($kg)' + '\r\n'));
+            bytes.addAll(
+              _encodeText(' ' * qtyPadding + '$qty ($kg)' + '\r\n'),
+            );
           } else {
             bytes.addAll(_encodeText('$qty ($kg)' + '\r\n'));
           }
