@@ -38,13 +38,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _updateDateTime() {
     final now = DateTime.now();
-    setState(() {
-      _timeString = DateFormat('H : mm : ss').format(now);
-      _dateString =
-          toBeginningOfSentenceCase(
-            DateFormat("EEEE, d MMMM y 'г.'", 'ru').format(now),
-          )!;
-    });
+    if (mounted) {
+      setState(() {
+        _timeString = DateFormat('H : mm : ss').format(now);
+        _dateString =
+            toBeginningOfSentenceCase(
+              DateFormat("EEEE, d MMMM y 'г.'", 'ru').format(now),
+            )!;
+      });
+    }
   }
 
   void _onKeyPressed(String value) {
@@ -86,12 +88,12 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-// API dan token olish funksiyasi + PIN tekshirish
+  // API dan token olish funksiyasi + PIN tekshirish
   Future<String?> getTokenFromApi(
-      String userCode,
-      String pin,
-      String role,
-      ) async {
+    String userCode,
+    String pin,
+    String role,
+  ) async {
     try {
       final loginUrl = Uri.parse('$baseUrl/auth/login');
       final res = await http.post(
@@ -121,7 +123,8 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         final errorData = jsonDecode(res.body);
         setState(() {
-          _errorMessage = errorData['message'] ?? "PIN xato yoki foydalanuvchi topilmadi.";
+          _errorMessage =
+              errorData['message'] ?? "PIN xato yoki foydalanuvchi topilmadi.";
         });
         return null;
       }
@@ -197,7 +200,8 @@ class _LoginScreenState extends State<LoginScreen> {
             break;
           default:
             setState(() {
-              _errorMessage = "Noma'lum foydalanuvchi roli: ${widget.user.role}";
+              _errorMessage =
+                  "Noma'lum foydalanuvchi roli: ${widget.user.role}";
             });
             return;
         }

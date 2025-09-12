@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:ui' as ui;
 import 'dart:ffi';
 import 'dart:io';
@@ -7,7 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/services.dart' show rootBundle; // Faqat rootBundle import qilish
+import 'package:flutter/services.dart'
+    show rootBundle; // Faqat rootBundle import qilish
 import 'package:ffi/ffi.dart';
 import 'package:image/image.dart' as img;
 import 'package:win32/win32.dart';
@@ -24,14 +26,7 @@ class UsbPrinterService {
       final pcbNeeded = calloc<DWORD>();
       final pcReturned = calloc<DWORD>();
 
-      EnumPrinters(
-          flags,
-          nullptr,
-          2,
-          nullptr,
-          0,
-          pcbNeeded,
-          pcReturned);
+      EnumPrinters(flags, nullptr, 2, nullptr, 0, pcbNeeded, pcReturned);
 
       final cbBuf = pcbNeeded.value;
       if (cbBuf == 0) {
@@ -60,8 +55,10 @@ class UsbPrinterService {
         print("🖨️ ${count} ta printer topildi");
 
         for (var i = 0; i < count; i++) {
-          final printerName = printerInfo.elementAt(i).ref.pPrinterName.toDartString();
-          final portName = printerInfo.elementAt(i).ref.pPortName.toDartString();
+          final printerName =
+              printerInfo.elementAt(i).ref.pPrinterName.toDartString();
+          final portName =
+              printerInfo.elementAt(i).ref.pPortName.toDartString();
 
           print("🖨️ Printer: $printerName, Port: $portName");
 
@@ -91,7 +88,9 @@ class UsbPrinterService {
   }
 
   Future<bool> printOrderReceipt(PendingOrder order) async {
-    print("🖨️ Chek chop etish boshlandi: ${order.formattedOrderNumber ?? order.orderNumber}");
+    print(
+      "🖨️ Chek chop etish boshlandi: ${order.formattedOrderNumber ?? order.orderNumber}",
+    );
 
     try {
       final printers = await getConnectedPrinters();
@@ -134,7 +133,10 @@ class UsbPrinterService {
     }
   }
 
-  Future<bool> _printToSpecificPrinter(PendingOrder order, String printerName) async {
+  Future<bool> _printToSpecificPrinter(
+    PendingOrder order,
+    String printerName,
+  ) async {
     final hPrinter = calloc<HANDLE>();
     final docInfo = calloc<DOC_INFO_1>();
 
@@ -273,7 +275,6 @@ class UsbPrinterService {
 
     return <int>[
       0x1B, 0x40, // Printer init
-
       // LOGO (512px, markazda)
       ...centeredLogo,
       // Logo va matn orasida bo'sh joy yo'q
@@ -288,12 +289,13 @@ class UsbPrinterService {
       0x1B, 0x45, 0x00, // Qalin shriftni o'chirish
       0x1B, 0x21, 0x00, // Oddiy shriftga qaytish
       0x0A, // Bo'sh qator
-
       // Sana va vaqt
       ...centerText(printDateTime),
       ...centerText("----------------------------------"),
       0x1B, 0x45, 0x01, // Qalin shrift
-      ...leftAlignText("       Buyurtma: ${order.formattedOrderNumber ?? order.orderNumber}"),
+      ...leftAlignText(
+        "       Buyurtma: ${order.formattedOrderNumber ?? order.orderNumber}",
+      ),
       ...leftAlignText("       Stol: ${order.tableName ?? 'N/A'}"),
       ...leftAlignText("       Ofitsiant: ${order.waiterName ?? 'N/A'}"),
       0x1B, 0x45, 0x00, // Qalin shriftni o'chirish
@@ -313,15 +315,18 @@ class UsbPrinterService {
       ...centerText("----------------------------------"),
 
       // 🔹 Hisob-kitob
-      ...centerText("Mahsulotlar: ${formatNumber(order.totalPrice - order.serviceAmount)} so'm"),
-      ...centerText("Xizmat haqi (${order.percentage}%): ${formatNumber(order.serviceAmount)} so'm"),
+      ...centerText(
+        "Mahsulotlar: ${formatNumber(order.totalPrice - order.serviceAmount)} so'm",
+      ),
+      ...centerText(
+        "Xizmat haqi (${order.percentage}%): ${formatNumber(order.serviceAmount)} so'm",
+      ),
 
       // Hisob-kitob (servicefee va subtotal bo'lmasa faqat totalPrice)
       0x1B, 0x21, 0x00, // Oddiy shrift
       // Qo'shimcha bo'shliq
       0x0A, // Xizmat haqi va jami o'rtasida bo'shliq
       0x0A, // Qo'shimcha bo'shliq
-
       // Yakuniy summa (katta va qalin)
       0x1B, 0x21, 0x20, // Katta shrift
       0x1B, 0x45, 0x01, // Qalin shrift
@@ -339,7 +344,6 @@ class UsbPrinterService {
       0x1B, 0x21, 0x00, // Oddiy shrift
       0x0A, // Bo'sh qator
       0x0A, // Bo'sh qator
-
       // Chekni kesish
       0x1B, 0x64, 0x06, // 6 ta bo'sh qator
       0x1D, 0x56, 0x00, // Kesish
@@ -363,7 +367,10 @@ class UsbPrinterService {
       String line = namePart;
 
       // Bo'sh joylar sonini hisoblash
-      int spaceCount = lineLength - utf8.encode(namePart).length - utf8.encode(qtyTotal).length;
+      int spaceCount =
+          lineLength -
+          utf8.encode(namePart).length -
+          utf8.encode(qtyTotal).length;
       if (spaceCount < 1) spaceCount = 1;
 
       line += ' ' * spaceCount + qtyTotal;
@@ -404,7 +411,7 @@ class UsbPrinterService {
     final numStr = number.toString().split('.');
     return numStr[0].replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]} ',
+      (Match m) => '${m[1]} ',
     );
   }
 }
@@ -429,9 +436,10 @@ class _FastUnifiedPendingPaymentsPageState
   List<PendingOrder> openOrders = [];
   List<PendingOrder> closedOrders = [];
   Timer? _refreshTimer;
+  Timer? _timer;
   bool _disposed = false;
   final UsbPrinterService _printerService =
-  UsbPrinterService(); // Bu qatorni qo'shing
+      UsbPrinterService(); // Bu qatorni qo'shing
 
   @override
   void initState() {
@@ -443,7 +451,7 @@ class _FastUnifiedPendingPaymentsPageState
     });
   }
 
-  static const String baseUrl = '${ApiConfig.baseUrl}';
+  static const String baseUrl = ApiConfig.baseUrl;
   static String? _token;
   static final Map<String, CachedData> _cache = {};
   static DateTime _lastFetch = DateTime(2000);
@@ -472,6 +480,7 @@ class _FastUnifiedPendingPaymentsPageState
     try {
       // Widget orqali uzatilgan token ishlatish
       final kassirToken = widget.token;
+      log("Token: $kassirToken");
       // PARALLEL API CALLS - 2 ta API ni bir vaqtda
       final results = await Future.wait([
         http.get(
@@ -497,34 +506,34 @@ class _FastUnifiedPendingPaymentsPageState
       if (results[0].statusCode == 200) {
         final data = jsonDecode(results[0].body);
         final orders =
-        (data is Map && data['orders'] is List
-            ? data['orders'] as List
-            : data is List
-            ? data
-            : []);
+            (data is Map && data['orders'] is List
+                ? data['orders'] as List
+                : data is List
+                ? data
+                : []);
         pendingOrders =
             orders
                 .map(
                   (orderJson) =>
-                  PendingOrder.fromJson(orderJson as Map<String, dynamic>),
-            )
+                      PendingOrder.fromJson(orderJson as Map<String, dynamic>),
+                )
                 .toList();
       }
       // Closed orders parse
       if (results[1].statusCode == 200) {
         final data = jsonDecode(results[1].body);
         final orders =
-        (data is Map && data['pending_orders'] is List
-            ? data['pending_orders'] as List
-            : data is List
-            ? data
-            : []);
+            (data is Map && data['pending_orders'] is List
+                ? data['pending_orders'] as List
+                : data is List
+                ? data
+                : []);
         closedOrders =
             orders
                 .map(
                   (orderJson) =>
-                  PendingOrder.fromJson(orderJson as Map<String, dynamic>),
-            )
+                      PendingOrder.fromJson(orderJson as Map<String, dynamic>),
+                )
                 .toList();
       }
 
@@ -545,27 +554,27 @@ class _FastUnifiedPendingPaymentsPageState
   }
 
   Future<bool> closeOrderFast(
-      String orderId,
-      List<Map<String, dynamic>> items,
-      ) async {
+    String orderId,
+    List<Map<String, dynamic>> items,
+  ) async {
     try {
       final response = await http
           .put(
-        Uri.parse('$baseUrl/orders/close/$orderId'),
-        headers: {
-          'Authorization': 'Bearer ${widget.token}',
-          'Content-Type': 'application/json',
-        },
-      )
+            Uri.parse('$baseUrl/orders/close/$orderId'),
+            headers: {
+              'Authorization': 'Bearer ${widget.token}',
+              'Content-Type': 'application/json',
+            },
+          )
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         // Printer calls - parallel
         final uniquePrinterIPs =
-        items
-            .map((item) => item['printer_ip'] as String?)
-            .where((ip) => ip != null && ip.isNotEmpty)
-            .toSet();
+            items
+                .map((item) => item['printer_ip'] as String?)
+                .where((ip) => ip != null && ip.isNotEmpty)
+                .toSet();
 
         if (uniquePrinterIPs.isNotEmpty) {
           // Printer calls parallel - kutmaydi
@@ -589,9 +598,9 @@ class _FastUnifiedPendingPaymentsPageState
   }
 
   Future<Map<String, dynamic>> processPaymentFast(
-      String orderId,
-      Map<String, dynamic> paymentData,
-      ) async {
+    String orderId,
+    Map<String, dynamic> paymentData,
+  ) async {
     // _getToken() o'rniga widget.token ishlatamiz
     if (widget.token == null) {
       return {'success': false, 'message': 'Token topilmadi'};
@@ -600,13 +609,13 @@ class _FastUnifiedPendingPaymentsPageState
     try {
       final response = await http
           .post(
-        Uri.parse('$baseUrl/kassir/payment/$orderId'),
-        headers: {
-          'Authorization': 'Bearer ${widget.token}',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(paymentData),
-      )
+            Uri.parse('$baseUrl/kassir/payment/$orderId'),
+            headers: {
+              'Authorization': 'Bearer ${widget.token}',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode(paymentData),
+          )
           .timeout(const Duration(seconds: 15));
 
       final data = jsonDecode(response.body);
@@ -616,7 +625,7 @@ class _FastUnifiedPendingPaymentsPageState
         return {
           'success': true,
           'message':
-          data['message']?.toString() ??
+              data['message']?.toString() ??
               'To‘lov muvaffaqiyatli amalga oshirildi',
           'data': data,
         };
@@ -625,7 +634,7 @@ class _FastUnifiedPendingPaymentsPageState
       return {
         'success': false,
         'message':
-        data['message']?.toString() ?? 'To‘lovni amalga oshirishda xato',
+            data['message']?.toString() ?? 'To‘lovni amalga oshirishda xato',
       };
     } catch (e) {
       debugPrint('To‘lovni amalga oshirishda xato: $e');
@@ -646,18 +655,18 @@ class _FastUnifiedPendingPaymentsPageState
     try {
       final response = await http
           .post(
-        Uri.parse('$baseUrl/orders/$orderId/cancel-item'),
-        headers: {
-          'Authorization': 'Bearer ${widget.token}',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'food_id': foodId,
-          'cancel_quantity': cancelQuantity,
-          'reason': reason,
-          'notes': notes,
-        }),
-      )
+            Uri.parse('$baseUrl/orders/$orderId/cancel-item'),
+            headers: {
+              'Authorization': 'Bearer ${widget.token}',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              'food_id': foodId,
+              'cancel_quantity': cancelQuantity,
+              'reason': reason,
+              'notes': notes,
+            }),
+          )
           .timeout(const Duration(seconds: 10));
 
       final data = jsonDecode(response.body);
@@ -668,7 +677,7 @@ class _FastUnifiedPendingPaymentsPageState
         return {
           'success': true,
           'message':
-          data['message']?.toString() ?? 'Item cancelled successfully',
+              data['message']?.toString() ?? 'Item cancelled successfully',
         };
       }
 
@@ -686,10 +695,10 @@ class _FastUnifiedPendingPaymentsPageState
     try {
       await http
           .post(
-        Uri.parse('http://$printerIP:9100/'),
-        headers: {'Content-Type': 'text/plain'},
-        body: 'Order #$orderId Closed\n',
-      )
+            Uri.parse('http://$printerIP:9100/'),
+            headers: {'Content-Type': 'text/plain'},
+            body: 'Order #$orderId Closed\n',
+          )
           .timeout(const Duration(seconds: 3));
     } catch (e) {
       debugPrint('Printer error $printerIP: $e');
@@ -727,6 +736,12 @@ class _FastUnifiedPendingPaymentsPageState
           errorMessage = 'Failed to load orders: $e';
         });
       }
+    }
+
+    // Schedule the next refresh 10 seconds later
+    if (!_disposed) {
+      _timer?.cancel(); // cancel any previous timer
+      _timer = Timer(const Duration(seconds: 10), _loadData);
     }
   }
 
@@ -801,12 +816,18 @@ class _FastUnifiedPendingPaymentsPageState
                     minWidth: 100,
                   ),
                   margin: const EdgeInsets.symmetric(horizontal: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.green,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 8),
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 8,
+                      ),
                     ],
                   ),
                   child: const Text(
@@ -821,7 +842,9 @@ class _FastUnifiedPendingPaymentsPageState
             reverseAnimationDuration: const Duration(milliseconds: 50),
           );
         } else {
-          _showSnackBar('Чек чоп этишда хатолик юз берди. Принтер уланганлигини текширинг.');
+          _showSnackBar(
+            'Чек чоп этишда хатолик юз берди. Принтер уланганлигини текширинг.',
+          );
         }
       }
     } catch (e) {
@@ -870,8 +893,8 @@ class _FastUnifiedPendingPaymentsPageState
   }
 
   Future<Map<String, dynamic>> _processPaymentHandler(
-      Map<String, dynamic> apiPayload,
-      ) async {
+    Map<String, dynamic> apiPayload,
+  ) async {
     setState(() => isLoading = true);
     final result = await processPaymentFast(
       selectedOrder!.id,
@@ -900,7 +923,7 @@ class _FastUnifiedPendingPaymentsPageState
           child: Container(
             constraints: BoxConstraints(
               maxWidth:
-              MediaQuery.of(context).size.width *
+                  MediaQuery.of(context).size.width *
                   0.8, // ekran kengligining 80% gacha
               minWidth: 100, // minimal kenglik (ixtiyoriy)
             ),
@@ -950,10 +973,10 @@ class _FastUnifiedPendingPaymentsPageState
   }
 
   Future<void> showCancelDialog(
-      String orderId,
-      String foodId,
-      int itemIndex,
-      ) async {
+    String orderId,
+    String foodId,
+    int itemIndex,
+  ) async {
     if (_disposed) return;
 
     String reason = "Mijoz bekor qildi"; // Default sabab
@@ -1052,15 +1075,15 @@ class _FastUnifiedPendingPaymentsPageState
                     ),
                   ),
                   items:
-                  reasons.map((r) {
-                    return DropdownMenuItem(
-                      value: r,
-                      child: Text(
-                        r,
-                        style: const TextStyle(color: Color(0xFF333333)),
-                      ),
-                    );
-                  }).toList(),
+                      reasons.map((r) {
+                        return DropdownMenuItem(
+                          value: r,
+                          child: Text(
+                            r,
+                            style: const TextStyle(color: Color(0xFF333333)),
+                          ),
+                        );
+                      }).toList(),
                   onChanged: (val) {
                     if (val != null) reason = val;
                   },
@@ -1147,13 +1170,13 @@ class _FastUnifiedPendingPaymentsPageState
   }
 
   Future<void> _deleteItem(
-      String orderId,
-      String foodId,
-      int itemIndex,
-      String reason,
-      String notes,
-      int cancelQuantity,
-      ) async {
+    String orderId,
+    String foodId,
+    int itemIndex,
+    String reason,
+    String notes,
+    int cancelQuantity,
+  ) async {
     setState(() => isLoading = true);
 
     final result = await cancelOrderItemFast(
@@ -1198,7 +1221,7 @@ class _FastUnifiedPendingPaymentsPageState
                 child: Container(
                   constraints: BoxConstraints(
                     maxWidth:
-                    MediaQuery.of(context).size.width *
+                        MediaQuery.of(context).size.width *
                         0.8, // ekran kengligining 80% gacha
                     minWidth: 100, // minimal kenglik (ixtiyoriy)
                   ),
@@ -1242,11 +1265,11 @@ class _FastUnifiedPendingPaymentsPageState
   Widget _buildOrderCard(PendingOrder order) {
     final isSelected = selectedOrder?.id == order.id;
     final rowColor =
-    isSelected
-        ? const Color(0xFFd4edda)
-        : selectedDateRange == 'closed'
-        ? const Color(0xFFffe6e6)
-        : _getStatusColor(order);
+        isSelected
+            ? const Color(0xFFd4edda)
+            : selectedDateRange == 'closed'
+            ? const Color(0xFFffe6e6)
+            : _getStatusColor(order);
 
     return InkWell(
       onTap: () => setState(() => selectedOrder = order),
@@ -1254,15 +1277,15 @@ class _FastUnifiedPendingPaymentsPageState
         decoration: BoxDecoration(
           color: rowColor,
           border:
-          isSelected
-              ? Border.all(color: const Color(0xFF28a745), width: 2)
-              : null,
+              isSelected
+                  ? Border.all(color: const Color(0xFF28a745), width: 2)
+                  : null,
         ),
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         child:
-        selectedDateRange == 'open'
-            ? _buildOpenOrderRow(order)
-            : _buildClosedOrderRow(order),
+            selectedDateRange == 'open'
+                ? _buildOpenOrderRow(order)
+                : _buildClosedOrderRow(order),
       ),
     );
   }
@@ -1279,7 +1302,10 @@ class _FastUnifiedPendingPaymentsPageState
         ),
         _buildDataCell(order.waiterName ?? 'N/A', flex: 2),
         _buildDataCell(order.tableName ?? 'N/A', flex: 1),
-        _buildDataCell(NumberFormat().format(order.serviceAmount ?? 0), flex: 1), // New column
+        _buildDataCell(
+          NumberFormat().format(order.serviceAmount ?? 0),
+          flex: 1,
+        ), // New column
         _buildDataCell(NumberFormat().format(order.finalTotal), flex: 2),
       ],
     );
@@ -1396,13 +1422,13 @@ class _FastUnifiedPendingPaymentsPageState
                     IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
                       onPressed:
-                      foodId.isEmpty
-                          ? null
-                          : () => showCancelDialog(
-                        selectedOrder!.id,
-                        foodId,
-                        index,
-                      ),
+                          foodId.isEmpty
+                              ? null
+                              : () => showCancelDialog(
+                                selectedOrder!.id,
+                                foodId,
+                                index,
+                              ),
                     ),
                   ],
                 ),
@@ -1459,55 +1485,55 @@ class _FastUnifiedPendingPaymentsPageState
                       padding: const EdgeInsets.all(8),
                       child: Row(
                         children:
-                        dateRangeButtons
-                            .map(
-                              (btn) => Expanded(
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 2,
-                              ),
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                  selectedDateRange == btn['key']
-                                      ? const Color(0xFF28a745)
-                                      : const Color(0xFFf5f5f5),
-                                  foregroundColor:
-                                  selectedDateRange == btn['key']
-                                      ? Colors.white
-                                      : Colors.black,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      0,
+                            dateRangeButtons
+                                .map(
+                                  (btn) => Expanded(
+                                    child: Container(
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 2,
+                                      ),
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor:
+                                              selectedDateRange == btn['key']
+                                                  ? const Color(0xFF28a745)
+                                                  : const Color(0xFFf5f5f5),
+                                          foregroundColor:
+                                              selectedDateRange == btn['key']
+                                                  ? Colors.white
+                                                  : Colors.black,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 12,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              0,
+                                            ),
+                                            side: const BorderSide(
+                                              color: Color(0xFF999999),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          elevation: 0,
+                                        ),
+                                        onPressed:
+                                            () => _handleDateRangeChange(
+                                              btn['key'] as String,
+                                            ),
+                                        child: Text(
+                                          btn['label'] as String,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w900,
+                                            height: 1.2,
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                    side: const BorderSide(
-                                      color: Color(0xFF999999),
-                                      width: 1,
-                                    ),
                                   ),
-                                  elevation: 0,
-                                ),
-                                onPressed:
-                                    () => _handleDateRangeChange(
-                                  btn['key'] as String,
-                                ),
-                                child: Text(
-                                  btn['label'] as String,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w900,
-                                    height: 1.2,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        )
-                            .toList(),
+                                )
+                                .toList(),
                       ),
                     ),
                     Padding(
@@ -1593,100 +1619,103 @@ class _FastUnifiedPendingPaymentsPageState
                       color: Colors.grey[300],
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       child:
-                      selectedDateRange == 'closed'
-                          ? Row(
-                        children: [
-                          _buildHeaderCell('Сана', flex: 1),
-                          _buildHeaderCell('Вақт', flex: 1),
-                          _buildHeaderCell('Заказ ', flex: 1),
-                          _buildHeaderCell('Стол ', flex: 1),
-                          _buildHeaderCell('Официант ', flex: 1),
-                          _buildHeaderCell('Таомлар ', flex: 1),
-                          _buildHeaderCell('Жами', flex: 2),
-                        ],
-                      )
-                          : Row(
-                        children: [
-                          _buildHeaderCell('Сана', flex: 1),
-                          _buildHeaderCell('Вақт', flex: 1),
-                          _buildHeaderCell('Заказ', flex: 1),
-                          _buildHeaderCell('Официант', flex: 2),
-                          _buildHeaderCell('Стол', flex: 1),
-                          _buildHeaderCell('Хизмат ҳақи', flex: 1), // New column
-                          _buildHeaderCell('Жами', flex: 2),
-                        ],
-                      ),
+                          selectedDateRange == 'closed'
+                              ? Row(
+                                children: [
+                                  _buildHeaderCell('Сана', flex: 1),
+                                  _buildHeaderCell('Вақт', flex: 1),
+                                  _buildHeaderCell('Заказ ', flex: 1),
+                                  _buildHeaderCell('Стол ', flex: 1),
+                                  _buildHeaderCell('Официант ', flex: 1),
+                                  _buildHeaderCell('Таомлар ', flex: 1),
+                                  _buildHeaderCell('Жами', flex: 2),
+                                ],
+                              )
+                              : Row(
+                                children: [
+                                  _buildHeaderCell('Сана', flex: 1),
+                                  _buildHeaderCell('Вақт', flex: 1),
+                                  _buildHeaderCell('Заказ', flex: 1),
+                                  _buildHeaderCell('Официант', flex: 2),
+                                  _buildHeaderCell('Стол', flex: 1),
+                                  _buildHeaderCell(
+                                    'Хизмат ҳақи',
+                                    flex: 1,
+                                  ), // New column
+                                  _buildHeaderCell('Жами', flex: 2),
+                                ],
+                              ),
                     ),
                     Expanded(
                       child: Container(
                         color: Colors.white,
                         child:
-                        isLoading
-                            ? const Center(
-                          child: CircularProgressIndicator(),
-                        )
-                            : errorMessage != null
-                            ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(errorMessage!),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: () {
-                                  clearCache();
-                                  _loadData();
-                                },
-                                child: const Text('Refresh'),
-                              ),
-                            ],
-                          ),
-                        )
-                            : currentData.isEmpty
-                            ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                selectedDateRange == 'open'
-                                    ? Icons.restaurant_menu
-                                    : Icons.payment,
-                                size: 64,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                selectedDateRange == 'open'
-                                    ? "Hozircha ochiq zakazlar yo'q"
-                                    : "To'lov kutayotgan zakazlar yo'q",
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.grey[600],
+                            isLoading
+                                ? const Center(
+                                  child: CircularProgressIndicator(),
+                                )
+                                : errorMessage != null
+                                ? Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(errorMessage!),
+                                      const SizedBox(height: 16),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          clearCache();
+                                          _loadData();
+                                        },
+                                        child: const Text('Refresh'),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                                : currentData.isEmpty
+                                ? Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        selectedDateRange == 'open'
+                                            ? Icons.restaurant_menu
+                                            : Icons.payment,
+                                        size: 64,
+                                        color: Colors.grey[400],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        selectedDateRange == 'open'
+                                            ? "Hozircha ochiq zakazlar yo'q"
+                                            : "To'lov kutayotgan zakazlar yo'q",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          clearCache();
+                                          _loadData();
+                                        },
+                                        child: const Text('Yangilash'),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                                : RefreshIndicator(
+                                  onRefresh: () async {
+                                    clearCache();
+                                    await _loadData();
+                                  },
+                                  child: ListView.builder(
+                                    itemCount: currentData.length,
+                                    itemBuilder:
+                                        (context, index) =>
+                                            _buildOrderCard(currentData[index]),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: () {
-                                  clearCache();
-                                  _loadData();
-                                },
-                                child: const Text('Yangilash'),
-                              ),
-                            ],
-                          ),
-                        )
-                            : RefreshIndicator(
-                          onRefresh: () async {
-                            clearCache();
-                            await _loadData();
-                          },
-                          child: ListView.builder(
-                            itemCount: currentData.length,
-                            itemBuilder:
-                                (context, index) =>
-                                _buildOrderCard(currentData[index]),
-                          ),
-                        ),
                       ),
                     ),
                     Container(
@@ -1707,13 +1736,13 @@ class _FastUnifiedPendingPaymentsPageState
                                 ElevatedButton(
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor:
-                                    selectedOrder != null
-                                        ? const Color(0xFF28a745)
-                                        : const Color(0xFFf5f5f5),
+                                        selectedOrder != null
+                                            ? const Color(0xFF28a745)
+                                            : const Color(0xFFf5f5f5),
                                     foregroundColor:
-                                    selectedOrder != null
-                                        ? Colors.white
-                                        : Colors.black,
+                                        selectedOrder != null
+                                            ? Colors.white
+                                            : Colors.black,
                                     minimumSize: const ui.Size(120, 70),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
@@ -1726,9 +1755,9 @@ class _FastUnifiedPendingPaymentsPageState
                                     shadowColor: Colors.black.withOpacity(0.2),
                                   ),
                                   onPressed:
-                                  selectedOrder != null
-                                      ? _handleCloseOrder
-                                      : null,
+                                      selectedOrder != null
+                                          ? _handleCloseOrder
+                                          : null,
                                   child: const Text(
                                     "Заказни ёпиш",
                                     style: TextStyle(
@@ -1776,11 +1805,11 @@ class _FastUnifiedPendingPaymentsPageState
                                 text: 'Выход',
                                 onPressed:
                                     () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => UserListPage(),
-                                  ),
-                                ),
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => UserListPage(),
+                                      ),
+                                    ),
                               ),
                             ],
                           ),
@@ -1874,7 +1903,7 @@ class _FastPaymentModalState extends State<FastPaymentModal> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _notesController = TextEditingController();
   final TextEditingController _paymentAmountController =
-  TextEditingController();
+      TextEditingController();
   final TextEditingController _cashAmountController = TextEditingController();
   final TextEditingController _cardAmountController = TextEditingController();
   final NumberFormat _currencyFormat = NumberFormat.currency(
@@ -2004,7 +2033,10 @@ class _FastPaymentModalState extends State<FastPaymentModal> {
 
     return Center(
       child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4), // Orqa fonni hiralash
+        filter: ui.ImageFilter.blur(
+          sigmaX: 4,
+          sigmaY: 4,
+        ), // Orqa fonni hiralash
         child: Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -2106,7 +2138,7 @@ class _FastPaymentModalState extends State<FastPaymentModal> {
                                 selected: _paymentMethod == 'cash',
                                 onSelected:
                                     (selected) =>
-                                    _handlePaymentMethodChange('cash'),
+                                        _handlePaymentMethodChange('cash'),
                               ),
                               ChoiceChip(
                                 label: const Text(
@@ -2116,7 +2148,7 @@ class _FastPaymentModalState extends State<FastPaymentModal> {
                                 selected: _paymentMethod == 'card',
                                 onSelected:
                                     (selected) =>
-                                    _handlePaymentMethodChange('card'),
+                                        _handlePaymentMethodChange('card'),
                               ),
                               ChoiceChip(
                                 label: const Text(
@@ -2126,7 +2158,7 @@ class _FastPaymentModalState extends State<FastPaymentModal> {
                                 selected: _paymentMethod == 'click',
                                 onSelected:
                                     (selected) =>
-                                    _handlePaymentMethodChange('click'),
+                                        _handlePaymentMethodChange('click'),
                               ),
                               ChoiceChip(
                                 label: const Text(
@@ -2136,7 +2168,7 @@ class _FastPaymentModalState extends State<FastPaymentModal> {
                                 selected: _paymentMethod == 'mixed',
                                 onSelected:
                                     (selected) =>
-                                    _handlePaymentMethodChange('mixed'),
+                                        _handlePaymentMethodChange('mixed'),
                               ),
                             ],
                           ),
@@ -2157,10 +2189,10 @@ class _FastPaymentModalState extends State<FastPaymentModal> {
                                         controller: _paymentAmountController,
                                         keyboardType: TextInputType.number,
                                         enabled:
-                                        ![
-                                          'card',
-                                          'click',
-                                        ].contains(_paymentMethod),
+                                            ![
+                                              'card',
+                                              'click',
+                                            ].contains(_paymentMethod),
                                         decoration: const InputDecoration(
                                           hintText: 'Summa',
                                           border: OutlineInputBorder(),
@@ -2175,7 +2207,7 @@ class _FastPaymentModalState extends State<FastPaymentModal> {
                                                 value?.replaceAll(',', '') ??
                                                     '',
                                               ) ??
-                                                  0;
+                                              0;
                                           if (amount <= 0) {
                                             return "To'lov summasi 0 dan katta bo'lishi kerak!";
                                           }
@@ -2190,12 +2222,12 @@ class _FastPaymentModalState extends State<FastPaymentModal> {
                                               double.tryParse(
                                                 value.replaceAll(',', '') ?? '',
                                               ) ??
-                                                  0;
+                                              0;
                                           setState(() {
                                             _paymentAmount = amount;
                                             if (_paymentMethod == 'cash') {
                                               _changeAmount = (amount -
-                                                  _orderTotal)
+                                                      _orderTotal)
                                                   .clamp(0, double.infinity);
                                             }
                                           });
@@ -2214,10 +2246,10 @@ class _FastPaymentModalState extends State<FastPaymentModal> {
                                             labelText: 'Qaytim',
                                             border: OutlineInputBorder(),
                                             contentPadding:
-                                            EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 8,
-                                            ),
+                                                EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 8,
+                                                ),
                                           ),
                                         ),
                                       ),
@@ -2276,7 +2308,7 @@ class _FastPaymentModalState extends State<FastPaymentModal> {
                                           double.tryParse(
                                             value?.replaceAll(',', '') ?? '',
                                           ) ??
-                                              0;
+                                          0;
                                       if (amount <= 0)
                                         return "Naqd summa 0'dan katta bo'lishi kerak!";
                                       return null;
@@ -2286,7 +2318,7 @@ class _FastPaymentModalState extends State<FastPaymentModal> {
                                           double.tryParse(
                                             value.replaceAll(',', '') ?? '',
                                           ) ??
-                                              0;
+                                          0;
                                       setState(() {
                                         _cashAmount = amount;
                                         final total = amount + _cardAmount;
@@ -2314,7 +2346,7 @@ class _FastPaymentModalState extends State<FastPaymentModal> {
                                           double.tryParse(
                                             value?.replaceAll(',', '') ?? '',
                                           ) ??
-                                              0;
+                                          0;
                                       if (amount <= 0)
                                         return "Karta summa 0'dan katta bo'lishi kerak!";
                                       return null;
@@ -2324,7 +2356,7 @@ class _FastPaymentModalState extends State<FastPaymentModal> {
                                           double.tryParse(
                                             value.replaceAll(',', '') ?? '',
                                           ) ??
-                                              0;
+                                          0;
                                       setState(() {
                                         _cardAmount = amount;
                                         final total = _cashAmount + amount;
@@ -2366,7 +2398,7 @@ class _FastPaymentModalState extends State<FastPaymentModal> {
                               children: [
                                 Row(
                                   mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     const Text(
                                       'Jami to\'lov:',
@@ -2387,7 +2419,7 @@ class _FastPaymentModalState extends State<FastPaymentModal> {
                                 const SizedBox(height: 4),
                                 Row(
                                   mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     const Text(
                                       'Kerakli:',
@@ -2400,12 +2432,12 @@ class _FastPaymentModalState extends State<FastPaymentModal> {
                                   ],
                                 ),
                                 if ((_paymentMethod == 'cash' ||
-                                    _paymentMethod == 'mixed') &&
+                                        _paymentMethod == 'mixed') &&
                                     _changeAmount > 0) ...[
                                   const SizedBox(height: 4),
                                   Row(
                                     mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       const Text(
                                         'Qaytim:',

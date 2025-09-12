@@ -1,4 +1,3 @@
 class ApiConfig {
-static const String baseUrl = "https://soradoslik.richman.uz/api";
-
+  static const String baseUrl = "https://soran.richman.uz/api";
 }
