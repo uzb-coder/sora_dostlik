@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:sora/Global/my_pkg.dart';
 
 import 'Offisant/Page/Users_page.dart';
 
@@ -149,6 +150,37 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 ),
                 child: const Text(
                   'Kirish',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.02),
+
+            Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  exit(0);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0d5720),
+                  padding: EdgeInsets.symmetric(
+                    horizontal:
+                        buttonPaddingHorizontal > 50
+                            ? 50
+                            : buttonPaddingHorizontal,
+                    vertical:
+                        buttonPaddingVertical > 30 ? 30 : buttonPaddingVertical,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  textStyle: TextStyle(
+                    fontSize: buttonFontSize > 18 ? 18 : buttonFontSize,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                child: const Text(
+                  'Chiqish',
                   style: TextStyle(color: Colors.white),
                 ),
               ),

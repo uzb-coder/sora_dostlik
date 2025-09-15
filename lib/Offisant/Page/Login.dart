@@ -107,9 +107,6 @@ class _LoginScreenState extends State<LoginScreen> {
         }),
       );
 
-      debugPrint('API Response Status: ${res.statusCode}');
-      debugPrint('API Response Body: ${res.body}');
-
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
 

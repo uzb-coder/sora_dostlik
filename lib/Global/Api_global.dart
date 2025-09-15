@@ -1,3 +1,4 @@
 class ApiConfig {
-  static const String baseUrl = "https://soran.richman.uz/api";
+  
+  static const String baseUrl = "http://192.168.1.19:8060/api";
 }

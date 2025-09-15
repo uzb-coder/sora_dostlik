@@ -3,10 +3,21 @@ import 'package:get/get.dart';
 import 'package:intl/date_symbol_data_local.dart'; // <-- MUHIM O'ZGARISH
 import 'Global/Global_token.dart';
 import 'Kirish.dart';
+import 'package:window_manager/window_manager.dart';
 
 void main() async {
   Get.put(TokenController());
   WidgetsFlutterBinding.ensureInitialized(); // <-- MUHIM O'ZGARISH
+  // Window manager sozlash
+  await windowManager.ensureInitialized();
+
+  // Full screen qilish
+  WindowOptions windowOptions = const WindowOptions(fullScreen: true);
+  windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.setFullScreen(true); // Doimiy fullscreen
+    await windowManager.show();
+    await windowManager.focus();
+  });
   await initializeDateFormatting('uz', null); // <-- MUHIM O'ZGARISH
   runApp(const MyApp());
 }
